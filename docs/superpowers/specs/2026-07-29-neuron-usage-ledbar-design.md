@@ -3,10 +3,11 @@
 ## Purpose
 
 A physical LED bar that visualizes real-time LLM usage on the company's LiteLLM
-proxy instance (`https://neuron.noser.com/v1`), across all users. More tokens
-generated per minute → more of the bar lights up, shifting from blue (low load)
-to red (high load). Individual requests trigger a short flash on top of the
-baseline level, giving a music-visualizer feel rather than a slow-moving gauge.
+proxy instance (`https://neuron.noser.com/v1`), across all users. More request
+(prompt) tokens sent per minute → more of the bar lights up, shifting from
+blue (low load) to red (high load). Individual requests trigger a short flash
+on top of the baseline level, giving a music-visualizer feel rather than a
+slow-moving gauge.
 
 ## Hardware
 
@@ -43,8 +44,8 @@ request/response once the API key exists — this is an implementation-time
 verification step, not an open design question.
 
 Each log entry exposes at least: `request_id`, `time`, `prompt_tokens`,
-`completion_tokens`. Only `completion_tokens` count toward the "tokens
-generated per minute" metric — prompt tokens are excluded.
+`completion_tokens`. Only `prompt_tokens` count toward the "tokens per
+minute" metric — completion tokens are excluded.
 
 ## Data flow
 
@@ -55,8 +56,8 @@ generated per minute" metric — prompt tokens are excluded.
    today). Parse with ArduinoJson.
 3. For every entry newer than the last-seen marker (by `time`, tie-broken by
    `request_id`): treat it as one **flash event**, with magnitude derived
-   from its `completion_tokens`.
-4. Maintain a 60-second sliding window of `(time, completion_tokens)` pairs
+   from its `prompt_tokens`.
+4. Maintain a 60-second sliding window of `(time, prompt_tokens)` pairs
    from observed flash events. Sum the window → raw tokens/minute rate.
 5. EMA-smooth the raw rate to avoid single-request spikes wildly kicking the
    baseline level.
@@ -71,7 +72,7 @@ generated per minute" metric — prompt tokens are excluded.
    - Flash overlay: each active flash event contributes a brief brightness
      boost (fast attack, slower exponential decay — VU-meter peak style),
      layered on top of the baseline. Flash size/brightness scales with the
-     event's `completion_tokens`.
+     event's `prompt_tokens`.
 
 ## Error handling
 
