@@ -1,3 +1,5 @@
+#ifndef UNIT_TEST
+
 #include <Arduino.h>
 
 void setup() {
@@ -8,3 +10,5 @@ void loop() {
     Serial.println("scaffold ok");
     delay(1000);
 }
+
+#endif // UNIT_TEST
