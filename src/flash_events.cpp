@@ -1,23 +1,24 @@
 #include "flash_events.h"
 #include <ArduinoJson.h>
-#include <ctime>
 #include <cstdio>
 
+static int64_t daysFromCivil(int y, int m, int d) {
+    y -= m <= 2;
+    int64_t era = (y >= 0 ? y : y - 399) / 400;
+    unsigned yoe = static_cast<unsigned>(y - era * 400);
+    unsigned doy = (153 * (m + (m > 2 ? -3 : 9)) + 2) / 5 + d - 1;
+    unsigned doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    return era * 146097 + static_cast<int64_t>(doe) - 719468;
+}
+
 static int64_t parseIso8601ToEpoch(const std::string& iso) {
-    struct tm timeVal = {};
     int year, month, day, hour, minute, second;
     if (sscanf(iso.c_str(), "%d-%d-%dT%d:%d:%d",
                &year, &month, &day, &hour, &minute, &second) != 6) {
         return 0;
     }
-    timeVal.tm_year = year - 1900;
-    timeVal.tm_mon = month - 1;
-    timeVal.tm_mday = day;
-    timeVal.tm_hour = hour;
-    timeVal.tm_min = minute;
-    timeVal.tm_sec = second;
-    timeVal.tm_isdst = 0;
-    return static_cast<int64_t>(timegm(&timeVal));
+    int64_t days = daysFromCivil(year, month, day);
+    return days * 86400 + hour * 3600 + minute * 60 + second;
 }
 
 std::vector<FlashEvent> parseFlashEvents(const std::string& jsonBody) {
