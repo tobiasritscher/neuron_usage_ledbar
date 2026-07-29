@@ -13,6 +13,7 @@
 #include "led_mapping.h"
 #include "litellm_client.h"
 #include "led_renderer.h"
+#include "root_ca.h"
 
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 WiFiClientSecure secureClient;
@@ -77,7 +78,7 @@ void setup() {
     while (WiFi.status() != WL_CONNECTED) {
         delay(250);
     }
-    secureClient.setInsecure();
+    secureClient.setCACert(LITELLM_ROOT_CA);
 
     configTime(0, 0, "pool.ntp.org");
     time_t now = time(nullptr);
