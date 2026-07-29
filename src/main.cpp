@@ -25,6 +25,7 @@ int64_t lastSeenEpoch = 0;
 unsigned long lastPollMillis = 0;
 unsigned long lastRenderMillis = 0;
 int consecutiveFailures = 0;
+bool isOffline = false;
 
 std::string todayDateString() {
     time_t now = time(nullptr);
@@ -105,19 +106,22 @@ void loop() {
         pollLiteLlm(false);
         lastPollMillis = nowMillis;
 
-        if (consecutiveFailures >= 3) {
-            renderer.renderOfflinePulse(nowMillis);
-            return;
-        }
+        isOffline = consecutiveFailures >= 3;
 
-        double smoothedRate = rateTracker.updateRate(static_cast<int64_t>(time(nullptr)));
-        LedMappingConfig mappingConfig{RATE_MIN, RATE_MAX, LED_COUNT};
-        renderer.setBaseline(rateToLedCount(smoothedRate, mappingConfig),
-                              rateToColor(smoothedRate, mappingConfig));
+        if (!isOffline) {
+            double smoothedRate = rateTracker.updateRate(static_cast<int64_t>(time(nullptr)));
+            LedMappingConfig mappingConfig{RATE_MIN, RATE_MAX, LED_COUNT};
+            renderer.setBaseline(rateToLedCount(smoothedRate, mappingConfig),
+                                  rateToColor(smoothedRate, mappingConfig));
+        }
     }
 
     if (nowMillis - lastRenderMillis >= RENDER_INTERVAL_MS) {
-        renderer.renderFrame(nowMillis);
+        if (isOffline) {
+            renderer.renderOfflinePulse(nowMillis);
+        } else {
+            renderer.renderFrame(nowMillis);
+        }
         lastRenderMillis = nowMillis;
     }
 }
