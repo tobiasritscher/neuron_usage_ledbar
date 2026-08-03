@@ -23,12 +23,9 @@ constexpr const char* LITELLM_LOGS_PATH_TEMPLATE =
 constexpr unsigned long POLL_INTERVAL_MS = 2500;
 constexpr unsigned long RENDER_INTERVAL_MS = 25; // ~40fps
 
-// Initial defaults — tuned against real traffic in Task 9.
-// Calibrated 2026-07-30 against real instance traffic: busy-hour Live Tail
-// showed ~20 requests/4min averaging ~100k prompt tokens => ~500k tokens/min
-// peak. RATE_MAX=2000 (the original guess) pinned the bar at full red all day.
+// Each LED represents 50k prompt tokens/min (rolling 60s window, EMA-smoothed).
 constexpr double RATE_MIN = 0.0;
-constexpr double RATE_MAX = 500000.0;
+constexpr double RATE_MAX = 50000.0 * LED_COUNT;
 
 constexpr double EMA_ALPHA = 0.3;
 constexpr long RATE_WINDOW_SECONDS = 60;

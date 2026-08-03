@@ -50,6 +50,47 @@ std::string todayDateString() {
     return std::string(buffer);
 }
 
+static uint32_t wheel(uint8_t pos) {
+    pos = 255 - pos;
+    if (pos < 85) {
+        return strip.Color(255 - pos * 3, 0, pos * 3);
+    }
+    if (pos < 170) {
+        pos -= 85;
+        return strip.Color(0, pos * 3, 255 - pos * 3);
+    }
+    pos -= 170;
+    return strip.Color(pos * 3, 255 - pos * 3, 0);
+}
+
+// Runs once at boot, before WiFi/network setup, so it always plays
+// regardless of connectivity — confirms the strip and wiring work
+// independent of whether real data ever arrives.
+void runStartupLedSelfTest() {
+    for (int frame = 0; frame < 60; frame++) {
+        for (int i = 0; i < LED_COUNT; i++) {
+            strip.setPixelColor(i, wheel(((i * 256 / LED_COUNT) + frame * 8) & 255));
+        }
+        strip.show();
+        delay(25);
+    }
+    strip.clear();
+    strip.show();
+    delay(150);
+
+    for (int i = 0; i < LED_COUNT; i++) {
+        strip.setPixelColor(i, strip.Color(255, 255, 255));
+        strip.show();
+        delay(35);
+    }
+    delay(200);
+    for (int i = LED_COUNT - 1; i >= 0; i--) {
+        strip.setPixelColor(i, 0);
+        strip.show();
+        delay(35);
+    }
+}
+
 void pollLiteLlm(bool isBaselineSnapshot) {
     std::string date = todayDateString();
     char pathBuffer[256];
@@ -67,6 +108,8 @@ void pollLiteLlm(bool isBaselineSnapshot) {
     consecutiveFailures = 0;
 
     auto freshEvents = filterNewerThan(events, seenRequestIds);
+    Serial.printf("[debug] poll: events=%d fresh=%d baseline=%d\n",
+                  (int)events.size(), (int)freshEvents.size(), (int)isBaselineSnapshot);
 
     for (const auto& event : events) {
         markSeen(event.requestId);
@@ -88,6 +131,7 @@ void setup() {
     strip.begin();
     strip.setBrightness(80);
     strip.show();
+    runStartupLedSelfTest();
 
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     while (WiFi.status() != WL_CONNECTED) {
@@ -135,8 +179,9 @@ void loop() {
         if (!isOffline) {
             double smoothedRate = rateTracker.updateRate(static_cast<int64_t>(time(nullptr)));
             LedMappingConfig mappingConfig{RATE_MIN, RATE_MAX, LED_COUNT};
-            renderer.setBaseline(rateToLedCount(smoothedRate, mappingConfig),
-                                  rateToColor(smoothedRate, mappingConfig));
+            int ledCount = rateToLedCount(smoothedRate, mappingConfig);
+            Serial.printf("[debug] rate=%.0f ledCount=%d\n", smoothedRate, ledCount);
+            renderer.setBaseline(ledCount, rateToColor(smoothedRate, mappingConfig));
         }
     }
 
