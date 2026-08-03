@@ -47,6 +47,7 @@ void pollLiteLlm(bool isBaselineSnapshot) {
                                           String(pathBuffer), LITELLM_API_KEY, fetchSuccess);
     if (!fetchSuccess) {
         consecutiveFailures++;
+        Serial.printf("[warn] poll failed (consecutiveFailures=%d)\n", consecutiveFailures);
         return;
     }
     consecutiveFailures = 0;

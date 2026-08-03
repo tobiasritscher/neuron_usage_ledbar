@@ -1,7 +1,6 @@
 #ifndef UNIT_TEST
 #include "litellm_client.h"
 #include <HTTPClient.h>
-#include <ArduinoJson.h>
 
 std::vector<FlashEvent> fetchRecentFlashEvents(WiFiClientSecure& client,
                                                 const String& host,
@@ -9,6 +8,7 @@ std::vector<FlashEvent> fetchRecentFlashEvents(WiFiClientSecure& client,
                                                 const String& apiKey,
                                                 bool& outSuccess) {
     outSuccess = false;
+    client.setTimeout(15000);
     HTTPClient http;
     String url = "https://" + host + path;
     if (!http.begin(client, url)) {
@@ -16,19 +16,17 @@ std::vector<FlashEvent> fetchRecentFlashEvents(WiFiClientSecure& client,
     }
 
     http.addHeader("Authorization", "Bearer " + apiKey);
-    http.setTimeout(5000);
+    http.setTimeout(15000);
 
     int statusCode = http.GET();
     std::vector<FlashEvent> events;
     if (statusCode == 200) {
-        JsonDocument doc;
-        DeserializationError err = deserializeJson(doc, http.getStream());
-        if (!err) {
-            events = flashEventsFromJsonDoc(doc);
-            outSuccess = true;
-        }
+        String body = http.getString();
+        events = parseFlashEvents(std::string(body.c_str()));
+        outSuccess = true;
     }
     http.end();
+    client.stop();
     return events;
 }
 #endif // UNIT_TEST
