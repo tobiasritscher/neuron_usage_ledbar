@@ -42,15 +42,15 @@ void pollLiteLlm(bool isBaselineSnapshot) {
     snprintf(pathBuffer, sizeof(pathBuffer), LITELLM_LOGS_PATH_TEMPLATE,
               date.c_str(), date.c_str());
 
-    String body = fetchRecentLogsJson(secureClient, LITELLM_HOST,
-                                        String(pathBuffer), LITELLM_API_KEY);
-    if (body.length() == 0) {
+    bool fetchSuccess = false;
+    auto events = fetchRecentFlashEvents(secureClient, LITELLM_HOST,
+                                          String(pathBuffer), LITELLM_API_KEY, fetchSuccess);
+    if (!fetchSuccess) {
         consecutiveFailures++;
         return;
     }
     consecutiveFailures = 0;
 
-    auto events = parseFlashEvents(std::string(body.c_str()));
     auto freshEvents = filterNewerThan(events, lastSeenRequestId, lastSeenEpoch);
 
     if (!events.empty()) {
@@ -79,16 +79,20 @@ void setup() {
     while (WiFi.status() != WL_CONNECTED) {
         delay(250);
     }
+    Serial.printf("[info] WiFi connected, IP=%s\n", WiFi.localIP().toString().c_str());
     secureClient.setCACert(LITELLM_ROOT_CA);
 
+    Serial.println("[debug] syncing NTP...");
     configTime(0, 0, "pool.ntp.org");
     time_t now = time(nullptr);
     while (now < 100000) {
         delay(250);
         now = time(nullptr);
     }
+    Serial.println("[debug] NTP synced, doing baseline poll...");
 
     pollLiteLlm(true);
+    Serial.println("[debug] baseline poll done, entering loop()");
     lastPollMillis = millis();
 }
 

@@ -22,13 +22,16 @@ static int64_t parseIso8601ToEpoch(const std::string& iso) {
 }
 
 std::vector<FlashEvent> parseFlashEvents(const std::string& jsonBody) {
-    std::vector<FlashEvent> events;
-
     JsonDocument doc;
     DeserializationError err = deserializeJson(doc, jsonBody);
     if (err) {
-        return events;
+        return {};
     }
+    return flashEventsFromJsonDoc(doc);
+}
+
+std::vector<FlashEvent> flashEventsFromJsonDoc(JsonDocument& doc) {
+    std::vector<FlashEvent> events;
 
     JsonArray arr = doc["data"].is<JsonArray>() ? doc["data"].as<JsonArray>()
                                                   : doc.as<JsonArray>();
