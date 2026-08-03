@@ -1,5 +1,5 @@
-#ifndef UNIT_TEST
 #pragma once
+#ifndef UNIT_TEST
 
 // Root CA for neuron.noser.com's TLS chain (DigiCert Global Root G2).
 // Fetched and verified 2026-07-29 — the server's leaf cert chains through

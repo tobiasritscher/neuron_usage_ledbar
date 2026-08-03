@@ -5,6 +5,9 @@
 #include <WiFiClientSecure.h>
 #include <Adafruit_NeoPixel.h>
 #include <ctime>
+#include <deque>
+#include <set>
+#include <string>
 
 #include "config.h"
 #include "secrets.h"
@@ -20,12 +23,23 @@ WiFiClientSecure secureClient;
 RateTracker rateTracker(EMA_ALPHA, RATE_WINDOW_SECONDS);
 LedRenderer renderer(strip, LED_COUNT);
 
-std::string lastSeenRequestId;
-int64_t lastSeenEpoch = 0;
+std::deque<std::string> seenRequestIdOrder;
+std::set<std::string> seenRequestIds;
+constexpr size_t kMaxSeenRequestIds = 64;
 unsigned long lastPollMillis = 0;
 unsigned long lastRenderMillis = 0;
 int consecutiveFailures = 0;
 bool isOffline = false;
+
+void markSeen(const std::string& requestId) {
+    if (seenRequestIds.insert(requestId).second) {
+        seenRequestIdOrder.push_back(requestId);
+        if (seenRequestIdOrder.size() > kMaxSeenRequestIds) {
+            seenRequestIds.erase(seenRequestIdOrder.front());
+            seenRequestIdOrder.pop_front();
+        }
+    }
+}
 
 std::string todayDateString() {
     time_t now = time(nullptr);
@@ -52,11 +66,10 @@ void pollLiteLlm(bool isBaselineSnapshot) {
     }
     consecutiveFailures = 0;
 
-    auto freshEvents = filterNewerThan(events, lastSeenRequestId, lastSeenEpoch);
+    auto freshEvents = filterNewerThan(events, seenRequestIds);
 
-    if (!events.empty()) {
-        lastSeenRequestId = events.front().requestId;
-        lastSeenEpoch = events.front().timestampEpoch;
+    for (const auto& event : events) {
+        markSeen(event.requestId);
     }
 
     if (isBaselineSnapshot) {
@@ -92,7 +105,14 @@ void setup() {
     }
     Serial.println("[debug] NTP synced, doing baseline poll...");
 
-    pollLiteLlm(true);
+    constexpr int kMaxBaselineAttempts = 5;
+    for (int attempt = 0; attempt < kMaxBaselineAttempts; attempt++) {
+        pollLiteLlm(true);
+        if (consecutiveFailures == 0) {
+            break;
+        }
+        delay(1000);
+    }
     Serial.println("[debug] baseline poll done, entering loop()");
     lastPollMillis = millis();
 }
@@ -102,7 +122,6 @@ void loop() {
 
     if (WiFi.status() != WL_CONNECTED) {
         renderer.renderOfflinePulse(nowMillis);
-        WiFi.reconnect();
         delay(200);
         return;
     }

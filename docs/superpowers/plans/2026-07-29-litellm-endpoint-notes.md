@@ -64,3 +64,11 @@ constexpr const char* LITELLM_LOGS_PATH_TEMPLATE =
 and gets substituted into both `%s` slots exactly as the original plan
 had it; only this one constant in `config.h` differs. Applied directly in
 Task 2 and Task 8 below instead of the plan's original endpoint guess.
+
+## Postscript (2026-08-03)
+
+`page_size` was later reduced from 20 to 8 (see `config.h`'s own comment
+for why — office WiFi transfer time for the larger page tripped the HTTP
+timeout). The newest-first ordering assumption above was confirmed working
+during live Task 9 hardware testing on 2026-08-03: flashes visibly tracked
+real requests in the correct order against actual proxy traffic.

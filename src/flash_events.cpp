@@ -21,13 +21,13 @@ static int64_t parseIso8601ToEpoch(const std::string& iso) {
     return days * 86400 + hour * 3600 + minute * 60 + second;
 }
 
-std::vector<FlashEvent> parseFlashEvents(const std::string& jsonBody) {
+ParseResult parseFlashEvents(const std::string& jsonBody) {
     JsonDocument doc;
     DeserializationError err = deserializeJson(doc, jsonBody);
     if (err) {
-        return {};
+        return ParseResult{};
     }
-    return flashEventsFromJsonDoc(doc);
+    return ParseResult{true, flashEventsFromJsonDoc(doc)};
 }
 
 std::vector<FlashEvent> flashEventsFromJsonDoc(JsonDocument& doc) {
@@ -48,14 +48,10 @@ std::vector<FlashEvent> flashEventsFromJsonDoc(JsonDocument& doc) {
 }
 
 std::vector<FlashEvent> filterNewerThan(const std::vector<FlashEvent>& events,
-                                         const std::string& lastSeenRequestId,
-                                         int64_t lastSeenEpoch) {
+                                         const std::set<std::string>& seenRequestIds) {
     std::vector<FlashEvent> fresh;
     for (const auto& event : events) {
-        bool isNewer = event.timestampEpoch > lastSeenEpoch;
-        bool isSameTimeDifferentRequest =
-            event.timestampEpoch == lastSeenEpoch && event.requestId != lastSeenRequestId;
-        if (isNewer || isSameTimeDifferentRequest) {
+        if (seenRequestIds.find(event.requestId) == seenRequestIds.end()) {
             fresh.push_back(event);
         }
     }

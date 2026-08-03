@@ -1,5 +1,5 @@
-#ifndef UNIT_TEST
 #pragma once
+#ifndef UNIT_TEST
 #include <Adafruit_NeoPixel.h>
 #include <vector>
 #include "led_mapping.h"

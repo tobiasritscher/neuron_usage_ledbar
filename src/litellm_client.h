@@ -1,5 +1,5 @@
-#ifndef UNIT_TEST
 #pragma once
+#ifndef UNIT_TEST
 #include <Arduino.h>
 #include <WiFiClientSecure.h>
 #include <vector>

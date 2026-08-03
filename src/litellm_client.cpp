@@ -22,8 +22,11 @@ std::vector<FlashEvent> fetchRecentFlashEvents(WiFiClientSecure& client,
     std::vector<FlashEvent> events;
     if (statusCode == 200) {
         String body = http.getString();
-        events = parseFlashEvents(std::string(body.c_str()));
-        outSuccess = true;
+        ParseResult result = parseFlashEvents(std::string(body.c_str()));
+        if (result.ok) {
+            events = result.events;
+            outSuccess = true;
+        }
     }
     http.end();
     client.stop();
