@@ -32,14 +32,15 @@ void LedRenderer::renderFrame(unsigned long nowMillis) {
     }
 
     for (int i = 0; i < ledCount_; i++) {
-        if (i < baselineLedCount_) {
-            uint8_t r = static_cast<uint8_t>(std::min(255.0, baselineColor_.r + flashBoost * 255.0));
-            uint8_t g = static_cast<uint8_t>(std::min(255.0, baselineColor_.g + flashBoost * 255.0));
-            uint8_t b = static_cast<uint8_t>(std::min(255.0, baselineColor_.b + flashBoost * 255.0));
-            strip_.setPixelColor(i, strip_.Color(r, g, b));
-        } else {
-            strip_.setPixelColor(i, 0);
-        }
+        RGB base = i < baselineLedCount_ ? baselineColor_ : RGB{0, 0, 0};
+        // Request flashes only light the bottom LEDs, blending toward orange
+        // (not adding white), so a busy bar doesn't read as the whole strip
+        // blinking white and stays distinct from the offline pulse.
+        double boost = i < kFlashLedCount ? flashBoost : 0.0;
+        uint8_t r = static_cast<uint8_t>(base.r + boost * (kFlashColor.r - base.r));
+        uint8_t g = static_cast<uint8_t>(base.g + boost * (kFlashColor.g - base.g));
+        uint8_t b = static_cast<uint8_t>(base.b + boost * (kFlashColor.b - base.b));
+        strip_.setPixelColor(i, strip_.Color(r, g, b));
     }
     strip_.show();
 }

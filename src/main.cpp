@@ -28,6 +28,7 @@ std::set<std::string> seenRequestIds;
 constexpr size_t kMaxSeenRequestIds = 64;
 unsigned long lastPollMillis = 0;
 unsigned long lastRenderMillis = 0;
+unsigned long lastSuccessMillis = 0;
 int consecutiveFailures = 0;
 bool isOffline = false;
 
@@ -106,6 +107,7 @@ void pollLiteLlm(bool isBaselineSnapshot) {
         return;
     }
     consecutiveFailures = 0;
+    lastSuccessMillis = millis();
 
     auto freshEvents = filterNewerThan(events, seenRequestIds);
     Serial.printf("[debug] poll: events=%d fresh=%d baseline=%d\n",
@@ -159,6 +161,7 @@ void setup() {
     }
     Serial.println("[debug] baseline poll done, entering loop()");
     lastPollMillis = millis();
+    lastSuccessMillis = lastPollMillis; // grace period starts after boot
 }
 
 void loop() {
@@ -174,7 +177,7 @@ void loop() {
         pollLiteLlm(false);
         lastPollMillis = nowMillis;
 
-        isOffline = consecutiveFailures >= 3;
+        isOffline = millis() - lastSuccessMillis >= OFFLINE_AFTER_MS;
 
         if (!isOffline) {
             double smoothedRate = rateTracker.updateRate(static_cast<int64_t>(time(nullptr)));

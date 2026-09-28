@@ -22,6 +22,9 @@ constexpr const char* LITELLM_LOGS_PATH_TEMPLATE =
 
 constexpr unsigned long POLL_INTERVAL_MS = 2500;
 constexpr unsigned long RENDER_INTERVAL_MS = 25; // ~40fps
+// Show the offline pulse only after this long without a successful poll, so
+// brief network/TLS hiccups keep the last known bar instead of flashing white.
+constexpr unsigned long OFFLINE_AFTER_MS = 30000;
 
 // Each LED represents 50k prompt tokens/min (rolling 60s window, EMA-smoothed).
 constexpr double RATE_MIN = 0.0;

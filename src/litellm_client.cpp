@@ -51,6 +51,13 @@ std::vector<FlashEvent> fetchRecentFlashEvents(WiFiClientSecure& client,
     http.setTimeout(15000);
 
     int statusCode = http.GET();
+    if (statusCode == HTTPC_ERROR_CONNECTION_REFUSED) {
+        // Covers any TCP/TLS connect failure (e.g. start_ssl_client), which
+        // fails fast and is usually transient — one immediate retry.
+        Serial.println("[warn] connect failed, retrying once");
+        client.stop();
+        statusCode = http.GET();
+    }
     std::vector<FlashEvent> events;
     if (statusCode == 200) {
         std::string body;

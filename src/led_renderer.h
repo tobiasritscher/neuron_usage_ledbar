@@ -26,5 +26,7 @@ private:
     std::vector<ActiveFlash> activeFlashes_;
 
     static constexpr unsigned long kFlashDurationMs = 600;
+    static constexpr int kFlashLedCount = 2;
+    static constexpr RGB kFlashColor = {250, 148, 0}; // Noser orange #FA9400
 };
 #endif // UNIT_TEST
