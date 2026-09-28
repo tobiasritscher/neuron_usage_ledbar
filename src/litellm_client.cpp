@@ -1,6 +1,32 @@
 #ifndef UNIT_TEST
 #include "litellm_client.h"
 #include <HTTPClient.h>
+#include <string>
+
+namespace {
+// Arduino String caps at 65'535 bytes on boards without PSRAM (CAPACITY_MAX
+// in WString.h) — getString() on a larger body silently returns "" or a
+// truncated prefix, regardless of free heap. std::string has no such cap, so
+// the body is buffered into one via HTTPClient::writeToStream instead.
+class StdStringSink : public Stream {
+public:
+    explicit StdStringSink(std::string& out) : out_(out) {}
+    size_t write(uint8_t c) override {
+        out_.push_back(static_cast<char>(c));
+        return 1;
+    }
+    size_t write(const uint8_t* buffer, size_t size) override {
+        out_.append(reinterpret_cast<const char*>(buffer), size);
+        return size;
+    }
+    int available() override { return 0; }
+    int read() override { return -1; }
+    int peek() override { return -1; }
+
+private:
+    std::string& out_;
+};
+} // namespace
 
 std::vector<FlashEvent> fetchRecentFlashEvents(WiFiClientSecure& client,
                                                 const String& host,
@@ -27,12 +53,27 @@ std::vector<FlashEvent> fetchRecentFlashEvents(WiFiClientSecure& client,
     int statusCode = http.GET();
     std::vector<FlashEvent> events;
     if (statusCode == 200) {
-        String body = http.getString();
-        ParseResult result = parseFlashEvents(std::string(body.c_str()));
-        if (result.ok) {
-            events = result.events;
-            outSuccess = true;
+        std::string body;
+        if (http.getSize() > 0) {
+            body.reserve(http.getSize());
         }
+        StdStringSink sink(body);
+        int written = http.writeToStream(&sink);
+        if (written <= 0) {
+            Serial.printf("[warn] body read failed: %s (size=%d, maxBlock=%u)\n",
+                          http.errorToString(written).c_str(), http.getSize(),
+                          ESP.getMaxAllocHeap());
+        } else {
+            ParseResult result = parseFlashEvents(body);
+            if (result.ok) {
+                events = result.events;
+                outSuccess = true;
+            } else {
+                Serial.printf("[warn] JSON parse failed (bodyLen=%u)\n", body.size());
+            }
+        }
+    } else {
+        Serial.printf("[warn] HTTP status=%d\n", statusCode);
     }
     http.end();
     client.stop();
