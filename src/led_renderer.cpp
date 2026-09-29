@@ -6,9 +6,8 @@
 LedRenderer::LedRenderer(Adafruit_NeoPixel& strip, int ledCount)
     : strip_(strip), ledCount_(ledCount) {}
 
-void LedRenderer::setBaseline(int ledCount, RGB color) {
+void LedRenderer::setBaseline(int ledCount) {
     baselineLedCount_ = ledCount;
-    baselineColor_ = color;
 }
 
 void LedRenderer::addFlash(uint32_t promptTokens, unsigned long nowMillis) {
@@ -32,7 +31,7 @@ void LedRenderer::renderFrame(unsigned long nowMillis) {
     }
 
     for (int i = 0; i < ledCount_; i++) {
-        RGB base = i < baselineLedCount_ ? baselineColor_ : RGB{0, 0, 0};
+        RGB base = i < baselineLedCount_ ? ledGradientColor(i, ledCount_) : RGB{0, 0, 0};
         // Request flashes only light the bottom LEDs, blending toward orange
         // (not adding white), so a busy bar doesn't read as the whole strip
         // blinking white and stays distinct from the offline pulse.

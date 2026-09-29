@@ -123,7 +123,7 @@ void pollLiteLlm(bool isBaselineSnapshot) {
 
     unsigned long nowMillis = millis();
     for (const auto& event : freshEvents) {
-        rateTracker.addEvent(event.timestampEpoch, event.promptTokens);
+        rateTracker.addEvent(event.timestampEpoch, event.spend);
         renderer.addFlash(event.promptTokens, nowMillis);
     }
 }
@@ -183,8 +183,8 @@ void loop() {
             double smoothedRate = rateTracker.updateRate(static_cast<int64_t>(time(nullptr)));
             LedMappingConfig mappingConfig{RATE_MIN, RATE_MAX, LED_COUNT};
             int ledCount = rateToLedCount(smoothedRate, mappingConfig);
-            Serial.printf("[debug] rate=%.0f ledCount=%d\n", smoothedRate, ledCount);
-            renderer.setBaseline(ledCount, rateToColor(smoothedRate, mappingConfig));
+            Serial.printf("[debug] rate=$%.3f/min ledCount=%d\n", smoothedRate, ledCount);
+            renderer.setBaseline(ledCount);
         }
     }
 

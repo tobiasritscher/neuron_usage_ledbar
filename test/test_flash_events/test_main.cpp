@@ -5,7 +5,7 @@
 void test_parse_two_events() {
     std::string json = R"({
         "data": [
-            {"request_id": "req-2", "startTime": "2026-07-29T16:30:11", "prompt_tokens": 125},
+            {"request_id": "req-2", "startTime": "2026-07-29T16:30:11", "prompt_tokens": 125, "spend": 0.0421},
             {"request_id": "req-1", "startTime": "2026-07-29T16:30:06", "prompt_tokens": 102}
         ]
     })";
@@ -16,6 +16,8 @@ void test_parse_two_events() {
     TEST_ASSERT_EQUAL(2, result.events.size());
     TEST_ASSERT_EQUAL_STRING("req-2", result.events[0].requestId.c_str());
     TEST_ASSERT_EQUAL_UINT32(125, result.events[0].promptTokens);
+    TEST_ASSERT_DOUBLE_WITHIN(1e-6, 0.0421, result.events[0].spend);
+    TEST_ASSERT_EQUAL_DOUBLE(0.0, result.events[1].spend); // missing field
     TEST_ASSERT_TRUE(result.events[0].timestampEpoch > result.events[1].timestampEpoch);
 }
 

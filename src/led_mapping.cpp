@@ -1,12 +1,15 @@
 #include "led_mapping.h"
 #include <algorithm>
+#include <cmath>
 
 static double normalizedFraction(double smoothedRate, const LedMappingConfig& config) {
-    if (config.rateMax <= config.rateMin) {
+    if (config.rateMin <= 0.0 || config.rateMax <= config.rateMin ||
+        smoothedRate <= config.rateMin) {
         return 0.0;
     }
-    double fraction = (smoothedRate - config.rateMin) / (config.rateMax - config.rateMin);
-    return std::min(1.0, std::max(0.0, fraction));
+    double fraction = std::log(smoothedRate / config.rateMin) /
+                      std::log(config.rateMax / config.rateMin);
+    return std::min(1.0, fraction);
 }
 
 int rateToLedCount(double smoothedRate, const LedMappingConfig& config) {
@@ -14,9 +17,9 @@ int rateToLedCount(double smoothedRate, const LedMappingConfig& config) {
     return static_cast<int>(fraction * config.ledCount + 0.5);
 }
 
-RGB rateToColor(double smoothedRate, const LedMappingConfig& config) {
-    double fraction = normalizedFraction(smoothedRate, config);
-    uint8_t red = static_cast<uint8_t>(255 * fraction);
-    uint8_t blue = static_cast<uint8_t>(255 * (1.0 - fraction));
-    return RGB{red, 0, blue};
+RGB ledGradientColor(int index, int ledCount) {
+    double t = ledCount > 1 ? static_cast<double>(index) / (ledCount - 1) : 0.0;
+    uint8_t red = static_cast<uint8_t>(std::min(255.0, 510.0 * t));
+    uint8_t green = static_cast<uint8_t>(std::min(255.0, 510.0 * (1.0 - t)));
+    return RGB{red, green, 0};
 }

@@ -41,6 +41,7 @@ std::vector<FlashEvent> flashEventsFromJsonDoc(JsonDocument& doc) {
         event.requestId = entry["request_id"] | "";
         event.timestampEpoch = parseIso8601ToEpoch(entry["startTime"] | "");
         event.promptTokens = entry["prompt_tokens"] | 0;
+        event.spend = entry["spend"] | 0.0;
         events.push_back(event);
     }
 

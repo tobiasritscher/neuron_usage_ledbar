@@ -26,9 +26,14 @@ constexpr unsigned long RENDER_INTERVAL_MS = 25; // ~40fps
 // brief network/TLS hiccups keep the last known bar instead of flashing white.
 constexpr unsigned long OFFLINE_AFTER_MS = 30000;
 
-// Each LED represents 50k prompt tokens/min (rolling 60s window, EMA-smoothed).
-constexpr double RATE_MIN = 0.0;
-constexpr double RATE_MAX = 50000.0 * LED_COUNT;
+// Bar height = spend in USD/min (rolling 60s window, EMA-smoothed), on a log
+// scale from RATE_MIN to RATE_MAX. Switched from prompt_tokens on 29.09.2026:
+// ~97% of prompt tokens are cache reads (agentic clients resend the whole
+// context each turn), so token rate saturated the bar all day. Calibrated on
+// that day's active minutes: median ~$0.23/min, p90 ~$0.71, p99 ~$3.1,
+// max ~$5.3 -> median lands mid-bar, only real peaks reach the red top.
+constexpr double RATE_MIN = 0.01;
+constexpr double RATE_MAX = 5.0;
 
 constexpr double EMA_ALPHA = 0.3;
 constexpr long RATE_WINDOW_SECONDS = 60;

@@ -26,10 +26,19 @@ void test_rate_drops_events_outside_window() {
     TEST_ASSERT_EQUAL_DOUBLE(100.0, rate);
 }
 
+void test_rate_sums_fractional_amounts() {
+    RateTracker tracker(1.0, 60);
+    tracker.addEvent(990, 0.25);
+    tracker.addEvent(995, 0.5);
+
+    TEST_ASSERT_EQUAL_DOUBLE(0.75, tracker.updateRate(1000));
+}
+
 int main(int argc, char** argv) {
     UNITY_BEGIN();
     RUN_TEST(test_rate_zero_with_no_events);
     RUN_TEST(test_rate_reflects_window_sum);
     RUN_TEST(test_rate_drops_events_outside_window);
+    RUN_TEST(test_rate_sums_fractional_amounts);
     return UNITY_END();
 }

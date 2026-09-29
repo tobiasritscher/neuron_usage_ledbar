@@ -9,6 +9,7 @@ struct FlashEvent {
     std::string requestId;
     int64_t timestampEpoch = 0;
     uint32_t promptTokens = 0;
+    double spend = 0.0; // USD, as billed by LiteLLM
 };
 
 // Result of parsing a LiteLLM logs response body. `ok` is true only if the
